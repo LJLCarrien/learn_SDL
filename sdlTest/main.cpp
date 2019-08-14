@@ -61,10 +61,16 @@ inline void cleanup<SDL_Surface>(SDL_Surface* surf) {
 #include "SDL.h"
 #include <stdio.h>
 #include <iostream>
+#include "SDL_image.h"
+
+//#pragma comment(lib ,"sdl2.lib")
+//#pragma comment(lib ,"SDL2main.lib")
+#pragma comment(lib ,"SDL2_image.lib")
 
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
+const int TILE_SIZE = 40;
 
 void logSDLError(std::ostream& os, const std::string& msg) {
 	os << msg << " error: " << SDL_GetError() << std::endl;
@@ -76,27 +82,25 @@ void logSDLError(const std::string& msg) {
 
 
 SDL_Texture* loadTexture(const std::string& file, SDL_Renderer* ren) {
-	SDL_Texture* texture = nullptr;
-	SDL_Surface* loadedImage = SDL_LoadBMP(file.c_str());
-	if (loadedImage != nullptr) {
-		texture = SDL_CreateTextureFromSurface(ren, loadedImage);
-		SDL_FreeSurface(loadedImage);
-		if (texture == nullptr) {
-			logSDLError("CreateTextureFromSurface");
-		}
-	}
-	else {
-		logSDLError("LoadBMP");
+	SDL_Texture* texture = IMG_LoadTexture(ren,file.c_str());
+	if (texture == nullptr) {
+		logSDLError("loadTexture");
 	}
 	return texture;
 }
 
-void renderTexture(SDL_Texture* tex, SDL_Renderer* ren, int x, int y) {
+void renderTexture(SDL_Texture* tex, SDL_Renderer* ren, int x, int y, int w, int h) {
 	SDL_Rect dst;
 	dst.x = x;
 	dst.y = y;
-	SDL_QueryTexture(tex, NULL, NULL, &dst.w, &dst.h);
+	dst.w = w;
+	dst.h = h;
 	SDL_RenderCopy(ren, tex, NULL, &dst);
+}
+void renderTexture(SDL_Texture* tex, SDL_Renderer* ren, int x, int y) {
+	int w, h;
+	SDL_QueryTexture(tex, NULL, NULL, &w, &h);
+	renderTexture(tex, ren, x, y, w, h);
 }
 
 int main(int argc, char* argv[]) {
@@ -122,37 +126,38 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	SDL_Texture *background = loadTexture("background.bmp", ren);
-	SDL_Texture *image = loadTexture("image.bmp", ren);
+	SDL_Texture *background = loadTexture("background.png", ren);
+	SDL_Texture *image = loadTexture("image.png", ren);
 	if (background == nullptr || image == nullptr) {
 		cleanup(background, image, ren, win);
+		IMG_Quit();
 		SDL_Quit();
 		return 1;
 	}
+	int xTiles = SCREEN_WIDTH / TILE_SIZE;
+	int yTiles = SCREEN_HEIGHT / TILE_SIZE;
 
-	//A sleepy rendering loop, wait for 3 seconds and render and present the screen each time
-	for (int i = 0; i < 3; ++i) {
-		//First clear the renderer
-		SDL_RenderClear(ren);
-		
-		int bW, bH;
-		SDL_QueryTexture(background, NULL, NULL, &bW, &bH);
-		renderTexture(background, ren, 0, 0);
-		renderTexture(background, ren, bW, 0);
-		renderTexture(background, ren, 0, bH);
-		renderTexture(background, ren, bW, bH);
+	for (int i = 0; i < xTiles * yTiles; ++i) {
+		int x = i % xTiles;
+		int y = i / xTiles;
+		renderTexture(background, ren, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE,
+			TILE_SIZE);
 
 		int iW, iH;
 		SDL_QueryTexture(image, NULL, NULL, &iW, &iH);
-		int x = SCREEN_WIDTH / 2 - iW / 2;
-		int y = SCREEN_HEIGHT / 2 - iH / 2;
-		renderTexture(image, ren, x, y);
+		int sx = SCREEN_WIDTH / 2 - iW / 2;
+		int sy = SCREEN_HEIGHT / 2 - iH / 2;
+		renderTexture(image, ren, sx, sy);
 
 		SDL_RenderPresent(ren);
-		SDL_Delay(1000);
+		if (i == (xTiles * yTiles) - 1)
+		{
+			SDL_Delay(2000);
+		}
 	}
 
 	cleanup(background, image, ren, win);
+	IMG_Quit();
 	SDL_Quit();
 	return 0;
 }
