@@ -82,7 +82,7 @@ void logSDLError(const std::string& msg) {
 
 
 SDL_Texture* loadTexture(const std::string& file, SDL_Renderer* ren) {
-	SDL_Texture* texture = IMG_LoadTexture(ren,file.c_str());
+	SDL_Texture* texture = IMG_LoadTexture(ren, file.c_str());
 	if (texture == nullptr) {
 		logSDLError("loadTexture");
 	}
@@ -126,37 +126,59 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	SDL_Texture *background = loadTexture("background.png", ren);
-	SDL_Texture *image = loadTexture("image.png", ren);
-	if (background == nullptr || image == nullptr) {
-		cleanup(background, image, ren, win);
+	SDL_Texture* image = loadTexture("image.png", ren);
+	if (image == nullptr) {
+		cleanup(image, ren, win);
 		IMG_Quit();
 		SDL_Quit();
 		return 1;
 	}
-	int xTiles = SCREEN_WIDTH / TILE_SIZE;
-	int yTiles = SCREEN_HEIGHT / TILE_SIZE;
 
-	for (int i = 0; i < xTiles * yTiles; ++i) {
-		int x = i % xTiles;
-		int y = i / xTiles;
-		renderTexture(background, ren, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE,
-			TILE_SIZE);
-
-		int iW, iH;
-		SDL_QueryTexture(image, NULL, NULL, &iW, &iH);
-		int sx = SCREEN_WIDTH / 2 - iW / 2;
-		int sy = SCREEN_HEIGHT / 2 - iH / 2;
-		renderTexture(image, ren, sx, sy);
-
-		SDL_RenderPresent(ren);
-		if (i == (xTiles * yTiles) - 1)
+	SDL_Event e;
+	bool quit = false;
+	int posX = 0;
+	int posY = 0;
+	while (!quit) {
+		while (SDL_PollEvent(&e))
 		{
-			SDL_Delay(2000);
+			if (e.type == SDL_QUIT)
+			{
+				quit = true;
+			}
+			if (e.type == SDL_KEYDOWN)
+			{
+				switch (e.key.keysym.sym)
+				{
+					case SDLK_LEFT:
+						posX--;
+						break;
+					case SDLK_RIGHT:
+						posX++;
+						break;
+					case SDLK_UP:
+						posY--;
+						break;
+					case SDLK_DOWN:
+						posY++;
+						break;
+					default:
+						break;
+				}
+				//quit = true;
+			}
+			if (e.type == SDL_MOUSEBUTTONDOWN)
+			{
+				posX = 0;
+				posY = 0;
+				//quit = true;
+			}
 		}
+		SDL_RenderClear(ren);
+		renderTexture(image, ren, posX, posY);
+		SDL_RenderPresent(ren);
 	}
 
-	cleanup(background, image, ren, win);
+	cleanup(image, ren, win);
 	IMG_Quit();
 	SDL_Quit();
 	return 0;
