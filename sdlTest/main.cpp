@@ -88,7 +88,24 @@ SDL_Texture* loadTexture(const std::string& file, SDL_Renderer* ren) {
 	}
 	return texture;
 }
-
+void renderTexture(SDL_Texture* tex, SDL_Renderer* ren, SDL_Rect dst, SDL_Rect* clip = nullptr)
+{
+	SDL_RenderCopy(ren, tex, clip, &dst);
+}
+void renderTexture(SDL_Texture* tex, SDL_Renderer* ren, int x, int y, SDL_Rect* clip = nullptr)
+{
+	SDL_Rect dst;
+	dst.x = x;
+	dst.y = y;
+	if (clip != nullptr) {
+		dst.w = clip->w;
+		dst.h = clip->h;
+	}
+	else {
+		SDL_QueryTexture(tex, NULL, NULL, &dst.w, &dst.h);
+	}
+	SDL_RenderCopy(ren, tex, clip, &dst);
+}
 void renderTexture(SDL_Texture* tex, SDL_Renderer* ren, int x, int y, int w, int h) {
 	SDL_Rect dst;
 	dst.x = x;
@@ -97,11 +114,8 @@ void renderTexture(SDL_Texture* tex, SDL_Renderer* ren, int x, int y, int w, int
 	dst.h = h;
 	SDL_RenderCopy(ren, tex, NULL, &dst);
 }
-void renderTexture(SDL_Texture* tex, SDL_Renderer* ren, int x, int y) {
-	int w, h;
-	SDL_QueryTexture(tex, NULL, NULL, &w, &h);
-	renderTexture(tex, ren, x, y, w, h);
-}
+
+
 
 int main(int argc, char* argv[]) {
 
@@ -134,10 +148,22 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
+	int iW = 100, iH = 100;
+	int x = SCREEN_WIDTH / 2 - iW / 2;
+	int y = SCREEN_HEIGHT / 2 - iH / 2;
+
+	SDL_Rect clips[4];
+	for (int i = 0; i < 4; ++i) {
+		clips[i].x = i / 2 * iW;
+		clips[i].y = i % 2 * iH;
+		clips[i].w = iW;
+		clips[i].h = iH;
+	}
+	int useClip = 0;
+
+
 	SDL_Event e;
 	bool quit = false;
-	int posX = 0;
-	int posY = 0;
 	while (!quit) {
 		while (SDL_PollEvent(&e))
 		{
@@ -149,32 +175,32 @@ int main(int argc, char* argv[]) {
 			{
 				switch (e.key.keysym.sym)
 				{
-					case SDLK_LEFT:
-						posX--;
+					case SDLK_1:
+						useClip = 0;
 						break;
-					case SDLK_RIGHT:
-						posX++;
+					case SDLK_2:
+						useClip = 1;
 						break;
-					case SDLK_UP:
-						posY--;
+					case SDLK_3:
+						useClip = 2;
 						break;
-					case SDLK_DOWN:
-						posY++;
+					case SDLK_4:
+						useClip = 3;
+						break;
+					case SDLK_ESCAPE:
+						quit = true;
 						break;
 					default:
 						break;
 				}
-				//quit = true;
 			}
 			if (e.type == SDL_MOUSEBUTTONDOWN)
 			{
-				posX = 0;
-				posY = 0;
-				//quit = true;
+				useClip = 0;
 			}
 		}
 		SDL_RenderClear(ren);
-		renderTexture(image, ren, posX, posY);
+		renderTexture(image, ren, x, y, &clips[useClip]);
 		SDL_RenderPresent(ren);
 	}
 
