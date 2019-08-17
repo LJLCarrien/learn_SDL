@@ -62,10 +62,12 @@ inline void cleanup<SDL_Surface>(SDL_Surface* surf) {
 #include <stdio.h>
 #include <iostream>
 #include "SDL_image.h"
+#include "SDL_ttf.h"
 
 //#pragma comment(lib ,"sdl2.lib")
 //#pragma comment(lib ,"SDL2main.lib")
 #pragma comment(lib ,"SDL2_image.lib")
+#pragma comment(lib ,"SDL2_ttf.lib")
 
 
 const int SCREEN_WIDTH = 640;
@@ -115,7 +117,28 @@ void renderTexture(SDL_Texture* tex, SDL_Renderer* ren, int x, int y, int w, int
 	SDL_RenderCopy(ren, tex, NULL, &dst);
 }
 
-
+SDL_Texture* renderText(const std::string& message, const std::string& fontFile,
+	SDL_Color color, int fontSize, SDL_Renderer* renderer)
+{
+	TTF_Font* font = TTF_OpenFont(fontFile.c_str(), fontSize);
+	if (font == nullptr) {
+		logSDLError(std::cout, "TTF_OpenFont");
+		return nullptr;
+	}
+	SDL_Surface* surf = TTF_RenderText_Blended(font, message.c_str(), color);
+	if (surf == nullptr) {
+		TTF_CloseFont(font);
+		logSDLError(std::cout, "TTF_RenderText");
+		return nullptr;
+	}
+	SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surf);
+	if (texture == nullptr) {
+		logSDLError(std::cout, "CreateTexture");
+	}
+	SDL_FreeSurface(surf);
+	TTF_CloseFont(font);
+	return texture;
+}
 
 int main(int argc, char* argv[]) {
 
@@ -124,7 +147,11 @@ int main(int argc, char* argv[]) {
 		logSDLError("SDL_Init");
 		return 1;
 	}
-
+	if (TTF_Init() != 0) {
+		logSDLError(std::cout, "TTF_Init");
+		SDL_Quit();
+		return 1;
+	}
 	SDL_Window* win = SDL_CreateWindow("Hello World!", 100, 100, 640, 480, SDL_WINDOW_SHOWN);
 	if (win == nullptr) {
 		logSDLError("SDL_CreateWindow");
@@ -140,26 +167,22 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	SDL_Texture* image = loadTexture("image.png", ren);
+	
+
+	SDL_Color color = { 255, 255, 255, 255 };
+	SDL_Texture* image = renderText("Hello TTF fonts!", "sample.ttf",color, 64, ren);
 	if (image == nullptr) {
-		cleanup(image, ren, win);
-		IMG_Quit();
+		cleanup(ren, win);
+		TTF_Quit();
 		SDL_Quit();
 		return 1;
 	}
-
-	int iW = 100, iH = 100;
+	
+	//Get the texture w/h so we can center it in the screen
+	int iW, iH;
+	SDL_QueryTexture(image, NULL, NULL, &iW, &iH);
 	int x = SCREEN_WIDTH / 2 - iW / 2;
 	int y = SCREEN_HEIGHT / 2 - iH / 2;
-
-	SDL_Rect clips[4];
-	for (int i = 0; i < 4; ++i) {
-		clips[i].x = i / 2 * iW;
-		clips[i].y = i % 2 * iH;
-		clips[i].w = iW;
-		clips[i].h = iH;
-	}
-	int useClip = 0;
 
 
 	SDL_Event e;
@@ -176,16 +199,6 @@ int main(int argc, char* argv[]) {
 				switch (e.key.keysym.sym)
 				{
 					case SDLK_1:
-						useClip = 0;
-						break;
-					case SDLK_2:
-						useClip = 1;
-						break;
-					case SDLK_3:
-						useClip = 2;
-						break;
-					case SDLK_4:
-						useClip = 3;
 						break;
 					case SDLK_ESCAPE:
 						quit = true;
@@ -196,16 +209,16 @@ int main(int argc, char* argv[]) {
 			}
 			if (e.type == SDL_MOUSEBUTTONDOWN)
 			{
-				useClip = 0;
+				quit = true;
 			}
 		}
 		SDL_RenderClear(ren);
-		renderTexture(image, ren, x, y, &clips[useClip]);
+		renderTexture(image, ren, x, y);
 		SDL_RenderPresent(ren);
 	}
 
 	cleanup(image, ren, win);
-	IMG_Quit();
+	TTF_Quit();
 	SDL_Quit();
 	return 0;
 }
