@@ -74,6 +74,9 @@ const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 const int TILE_SIZE = 40;
 
+//Frees media and shuts down SDL
+void close();
+
 void logSDLError(std::ostream& os, const std::string& msg) {
 	os << msg << " error: " << SDL_GetError() << std::endl;
 }
@@ -140,6 +143,71 @@ SDL_Texture* renderText(const std::string& message, const std::string& fontFile,
 	return texture;
 }
 
+SDL_Window* win = NULL;
+
+//The surface contained by the window
+SDL_Surface* gScreenSurface = NULL;
+
+//Current displayed image
+SDL_Surface* gStretchedSurface = NULL;
+
+SDL_Surface* loadSurface(std::string path)
+{
+	//The final optimized image
+	SDL_Surface* optimizedSurface = NULL;
+
+	//Load image at specified path
+	SDL_Surface* loadedSurface = SDL_LoadBMP(path.c_str());
+	if (loadedSurface == NULL)
+	{
+		printf("Unable to load image %s! SDL Error: %s\n", path.c_str(), SDL_GetError());
+	}
+	else
+	{
+		//Convert surface to screen format
+		optimizedSurface = SDL_ConvertSurface(loadedSurface, gScreenSurface->format, 0);
+		if (optimizedSurface == NULL)
+		{
+			printf("Unable to optimize image %s! SDL Error: %s\n", path.c_str(), SDL_GetError());
+		}
+
+		//Get rid of old loaded surface
+		SDL_FreeSurface(loadedSurface);
+	}
+
+	return optimizedSurface;
+}
+
+bool loadMedia()
+{
+	//Loading success flag
+	bool success = true;
+
+	//Load stretching surface
+	gStretchedSurface = loadSurface("stretch.bmp");
+	if (gStretchedSurface == NULL)
+	{
+		printf("Failed to load stretching image!\n");
+		success = false;
+	}
+
+	return success;
+}
+
+bool InitRender(SDL_Window* window) {
+	bool success = true;
+
+	SDL_Renderer* ren = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	if (ren == nullptr) {
+		SDL_DestroyWindow(window);
+		logSDLError("SDL_CreateRenderer");
+		SDL_Quit();
+		success = false;
+	}
+	return success;
+
+}
+
 int main(int argc, char* argv[]) {
 
 
@@ -152,37 +220,20 @@ int main(int argc, char* argv[]) {
 		SDL_Quit();
 		return 1;
 	}
-	SDL_Window* win = SDL_CreateWindow("Hello World!", 100, 100, 640, 480, SDL_WINDOW_SHOWN);
+	win = SDL_CreateWindow("Hello World!", 100, 100, 640, 480, SDL_WINDOW_SHOWN);
 	if (win == nullptr) {
 		logSDLError("SDL_CreateWindow");
 		SDL_Quit();
 		return 1;
 	}
-
-	SDL_Renderer* ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-	if (ren == nullptr) {
-		SDL_DestroyWindow(win);
-		logSDLError("SDL_CreateRenderer");
-		SDL_Quit();
-		return 1;
+	else {
+		gScreenSurface = SDL_GetWindowSurface(win);
 	}
 
-	
-
-	SDL_Color color = { 255, 255, 255, 255 };
-	SDL_Texture* image = renderText("Hello TTF fonts!", "sample.ttf",color, 64, ren);
-	if (image == nullptr) {
-		cleanup(ren, win);
-		TTF_Quit();
-		SDL_Quit();
+	if (!loadMedia())
+	{
 		return 1;
 	}
-	
-	//Get the texture w/h so we can center it in the screen
-	int iW, iH;
-	SDL_QueryTexture(image, NULL, NULL, &iW, &iH);
-	int x = SCREEN_WIDTH / 2 - iW / 2;
-	int y = SCREEN_HEIGHT / 2 - iH / 2;
 
 
 	SDL_Event e;
@@ -198,13 +249,13 @@ int main(int argc, char* argv[]) {
 			{
 				switch (e.key.keysym.sym)
 				{
-					case SDLK_1:
-						break;
-					case SDLK_ESCAPE:
-						quit = true;
-						break;
-					default:
-						break;
+				case SDLK_1:
+					break;
+				case SDLK_ESCAPE:
+					quit = true;
+					break;
+				default:
+					break;
 				}
 			}
 			if (e.type == SDL_MOUSEBUTTONDOWN)
@@ -212,13 +263,30 @@ int main(int argc, char* argv[]) {
 				quit = true;
 			}
 		}
-		SDL_RenderClear(ren);
-		renderTexture(image, ren, x, y);
-		SDL_RenderPresent(ren);
-	}
 
-	cleanup(image, ren, win);
-	TTF_Quit();
-	SDL_Quit();
+
+		SDL_Rect stretchRect;
+		stretchRect.x = 0;
+		stretchRect.y = 0;
+		stretchRect.w = SCREEN_WIDTH;
+		stretchRect.h = SCREEN_HEIGHT;
+		SDL_BlitScaled(gStretchedSurface, NULL, gScreenSurface, &stretchRect);
+		SDL_UpdateWindowSurface(win);
+
+	}
+	cleanup(win);
+	close();
 	return 0;
+}
+
+void close()
+{
+	//Free loaded image
+	SDL_FreeSurface(gStretchedSurface);
+	gStretchedSurface = NULL;
+
+	win = NULL;
+
+	//Quit SDL subsystems
+	SDL_Quit();
 }
