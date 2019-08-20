@@ -80,7 +80,7 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>E:\learn_SDL\SDL2-devel-2.0.10-VC\SDL2-2.0.10\lib\x86;E:\learn_SDL\SDL2_image-devel-2.0.5-VC\SDL2_image-2.0.5\lib\x86;E:\learn_SDL\SDL2_ttf-devel-2.0.15-VC\SDL2_ttf-2.0.15\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
