@@ -90,6 +90,32 @@ void logIMGError(const std::string& msg) {
 	std::cout << msg << "[IMG_GetError] error: " << IMG_GetError() << std::endl;
 }
 
+SDL_Texture* lazyFoo_loadTexture(std::string path, SDL_Renderer* ren)
+{
+	//The final texture
+	SDL_Texture* newTexture = NULL;
+
+	//Load image at specified path
+	SDL_Surface* loadedSurface = IMG_Load(path.c_str());
+	if (loadedSurface == NULL)
+	{
+		printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError());
+	}
+	else
+	{
+		//Create texture from surface pixels
+		newTexture = SDL_CreateTextureFromSurface(ren, loadedSurface);
+		if (newTexture == NULL)
+		{
+			printf("Unable to create texture from %s! SDL Error: %s\n", path.c_str(), SDL_GetError());
+		}
+
+		//Get rid of old loaded surface
+		SDL_FreeSurface(loadedSurface);
+	}
+
+	return newTexture;
+}
 
 SDL_Texture* loadTexture(const std::string& file, SDL_Renderer* ren) {
 	SDL_Texture* texture = IMG_LoadTexture(ren, file.c_str());
@@ -148,13 +174,14 @@ SDL_Texture* renderText(const std::string& message, const std::string& fontFile,
 	return texture;
 }
 
-SDL_Window* win = NULL;
-
+SDL_Window* gWindow = NULL;
+SDL_Renderer* gRenderer = NULL;
 //The surface contained by the window
 SDL_Surface* gScreenSurface = NULL;
 
-//Current displayed image
-SDL_Surface* gStretchedSurface = NULL;
+
+//Current displayed texture
+SDL_Texture* gTexture = NULL;
 
 SDL_Surface* loadSurface(std::string path)
 {
@@ -190,28 +217,24 @@ bool loadMedia()
 	//Loading success flag
 	bool success = true;
 
-	//Load stretching surface
-	gStretchedSurface = loadSurface("preview.png");
-	if (gStretchedSurface == NULL)
+	gTexture=lazyFoo_loadTexture("lession7.png", gRenderer);
+
+	if (gTexture == NULL)
 	{
 		printf("Failed to load stretching image!\n");
 		success = false;
 	}
-
 	return success;
 }
 
-bool InitRender(SDL_Window* window) {
+SDL_Renderer* InitRender(SDL_Window* window) {
 	bool success = true;
 
-	SDL_Renderer* ren = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-	if (ren == nullptr) {
-		SDL_DestroyWindow(window);
+	SDL_Renderer* render = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	if (render == nullptr) {
 		logSDLError("SDL_CreateRenderer");
-		SDL_Quit();
-		success = false;
 	}
-	return success;
+	return render;
 
 }
 
@@ -231,12 +254,16 @@ bool init()
 		return false;
 	}
 	//Create window
-	win = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-	if (win == NULL)
+	gWindow = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+	if (gWindow == NULL)
 	{
 		logSDLError("SDL_CreateWindow");
 		return false;
 	}
+
+	gRenderer = InitRender(gWindow);
+	SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+
 	//Initialize PNG loading
 	int imgFlags = IMG_INIT_PNG;
 	if (!(IMG_Init(imgFlags) & imgFlags))
@@ -244,30 +271,17 @@ bool init()
 		logIMGError("IMG_Init");
 		return false;
 	}
-	else
-	{
-		//Get window surface
-		gScreenSurface = SDL_GetWindowSurface(win);
-	}
 	return success;
 }
 
 int main(int argc, char* argv[]) {
 
-	if (init())
-	{
-		
-
-	}
-
-	if (!loadMedia())
-	{
-		return 1;
-	}
-
-
-	SDL_Event e;
 	bool quit = false;
+
+	quit = !init();
+	quit = !loadMedia();
+	
+	SDL_Event e;
 	while (!quit) {
 		while (SDL_PollEvent(&e))
 		{
@@ -294,29 +308,28 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
+		//Clear screen
+		SDL_RenderClear(gRenderer);
 
-		SDL_Rect stretchRect;
-		stretchRect.x = 0;
-		stretchRect.y = 0;
-		stretchRect.w = SCREEN_WIDTH;
-		stretchRect.h = SCREEN_HEIGHT;
-		SDL_BlitScaled(gStretchedSurface, NULL, gScreenSurface, &stretchRect);
-		SDL_UpdateWindowSurface(win);
+		//Render texture to screen
+		SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
+
+		//Update screen
+		SDL_RenderPresent(gRenderer);
 
 	}
-	cleanup(win);
 	close();
 	return 0;
 }
 
 void close()
 {
-	//Free loaded image
-	SDL_FreeSurface(gStretchedSurface);
-	gStretchedSurface = NULL;
-
-	win = NULL;
+	cleanup(gTexture,gWindow,gRenderer);
+	gTexture = NULL;
+	gWindow = NULL;
+	gRenderer = NULL;
 
 	//Quit SDL subsystems
+	IMG_Quit();
 	SDL_Quit();
 }
