@@ -217,13 +217,13 @@ bool loadMedia()
 	//Loading success flag
 	bool success = true;
 
-	/*gTexture=lazyFoo_loadTexture("lession7.png", gRenderer);
+	gTexture=lazyFoo_loadTexture("lession9_viewport.png", gRenderer);
 
 	if (gTexture == NULL)
 	{
 		printf("Failed to load stretching image!\n");
 		success = false;
-	}*/
+	}
 	return success;
 }
 
@@ -274,6 +274,77 @@ bool init()
 	return success;
 }
 
+void DrawLession8()
+{
+	//Clear screen
+	SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+	SDL_RenderClear(gRenderer);
+
+	//Render red filled quad
+	SDL_Rect fillRect = { SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
+	SDL_SetRenderDrawColor(gRenderer, 0xFF, 0x00, 0x00, 0xFF);
+	SDL_RenderFillRect(gRenderer, &fillRect);
+
+	//Render green outlined quad
+	SDL_Rect outlineRect = { SCREEN_WIDTH / 6, SCREEN_HEIGHT / 6, SCREEN_WIDTH * 2 / 3, SCREEN_HEIGHT * 2 / 3 };
+	SDL_SetRenderDrawColor(gRenderer, 0x00, 0xFF, 0x00, 0xFF);
+	SDL_RenderDrawRect(gRenderer, &outlineRect);
+
+	//Draw blue horizontal line
+	SDL_SetRenderDrawColor(gRenderer, 0x00, 0x00, 0xFF, 0xFF);
+	SDL_RenderDrawLine(gRenderer, 0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
+
+	//Draw vertical line of yellow dots
+	SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0x00, 0xFF);
+	for (int i = 0; i < SCREEN_HEIGHT; i += 4)
+	{
+		SDL_RenderDrawPoint(gRenderer, SCREEN_WIDTH / 2, i);
+	}
+
+
+	//Update screen
+	SDL_RenderPresent(gRenderer);
+}
+
+void DrawViewPort(SDL_Renderer* render,int x,int y ,int w,int h)
+{
+	SDL_Rect rect;
+	rect.x = x;
+	rect.y = y;
+	rect.w = w;
+	rect.h = h;
+	SDL_RenderSetViewport(render, &rect);
+}
+void DrawLession9()
+{
+	//Top left corner viewport
+	DrawViewPort(gRenderer,0,0, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+
+	//Render texture to screen
+	SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
+
+	//Top right viewport
+	DrawViewPort(gRenderer, SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+
+	//Render texture to screen
+	SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
+
+	//Bottom viewport
+	SDL_Rect bottomViewport;
+	bottomViewport.x = 0;
+	bottomViewport.y = SCREEN_HEIGHT / 2;
+	bottomViewport.w = SCREEN_WIDTH;
+	bottomViewport.h = SCREEN_HEIGHT / 2;
+	DrawViewPort(gRenderer,  0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
+
+	//Render texture to screen
+	SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
+
+
+	//Update screen
+	SDL_RenderPresent(gRenderer);
+}
+
 int main(int argc, char* argv[]) {
 
 	bool quit = false;
@@ -307,36 +378,8 @@ int main(int argc, char* argv[]) {
 				quit = true;
 			}
 		}
-		//Clear screen
-		SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
-		SDL_RenderClear(gRenderer);
-
-		//Render red filled quad
-		SDL_Rect fillRect = { SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
-		SDL_SetRenderDrawColor(gRenderer, 0xFF, 0x00, 0x00, 0xFF);
-		SDL_RenderFillRect(gRenderer, &fillRect);
-
-		//Render green outlined quad
-		SDL_Rect outlineRect = { SCREEN_WIDTH / 6, SCREEN_HEIGHT / 6, SCREEN_WIDTH * 2 / 3, SCREEN_HEIGHT * 2 / 3 };
-		SDL_SetRenderDrawColor(gRenderer, 0x00, 0xFF, 0x00, 0xFF);
-		SDL_RenderDrawRect(gRenderer, &outlineRect);
-
-		//Draw blue horizontal line
-		SDL_SetRenderDrawColor(gRenderer, 0x00, 0x00, 0xFF, 0xFF);
-		SDL_RenderDrawLine(gRenderer, 0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
-
-		//Draw vertical line of yellow dots
-		SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0x00, 0xFF);
-		for (int i = 0; i < SCREEN_HEIGHT; i += 4)
-		{
-			SDL_RenderDrawPoint(gRenderer, SCREEN_WIDTH / 2, i);
-		}
-
-		////Render texture to screen
-		//SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
-
-		//Update screen
-		SDL_RenderPresent(gRenderer);
+		//DrawLession8();
+		DrawLession9();
 
 	}
 	close();
