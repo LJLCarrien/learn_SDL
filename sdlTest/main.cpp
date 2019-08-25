@@ -64,6 +64,7 @@ inline void cleanup<SDL_Surface>(SDL_Surface* surf) {
 #include <iostream>
 #include "SDL_image.h"
 #include "SDL_ttf.h"
+#include"LTexture.h"
 
 //#pragma comment(lib ,"SDL2.lib")
 //#pragma comment(lib ,"SDL2main.lib")
@@ -74,6 +75,7 @@ inline void cleanup<SDL_Surface>(SDL_Surface* surf) {
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 const int TILE_SIZE = 40;
+
 
 //Frees media and shuts down SDL
 void close();
@@ -183,6 +185,10 @@ SDL_Surface* gScreenSurface = NULL;
 //Current displayed texture
 SDL_Texture* gTexture = NULL;
 
+//Scene textures
+LTexture gFooTexture;
+LTexture gBackgroundTexture;
+
 SDL_Surface* loadSurface(std::string path)
 {
 	//The final optimized image
@@ -217,10 +223,13 @@ bool loadMedia()
 	//Loading success flag
 	bool success = true;
 
-	gTexture=lazyFoo_loadTexture("lession9_viewport.png", gRenderer);
+	if (!gFooTexture.loadFromFile(gRenderer, "res/lession10/foo.png")) {
+		printf("Failed to load Foo' texture image!\n");
+		success = false;
+	}
 
-	if (gTexture == NULL)
-	{
+	if (!gBackgroundTexture.loadFromFile(gRenderer, "res/lession10/background.png")) {
+
 		printf("Failed to load stretching image!\n");
 		success = false;
 	}
@@ -253,6 +262,12 @@ bool init()
 		logSDLError(std::cout, "TTF_Init");
 		return false;
 	}
+	//Set texture filtering to linear
+	if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1"))
+	{
+		printf("Warning: Linear texture filtering not enabled!");
+	}
+
 	//Create window
 	gWindow = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 	if (gWindow == NULL)
@@ -306,7 +321,7 @@ void DrawLession8()
 	SDL_RenderPresent(gRenderer);
 }
 
-void DrawViewPort(SDL_Renderer* render,int x,int y ,int w,int h)
+void DrawViewPort(SDL_Renderer* render, int x, int y, int w, int h)
 {
 	SDL_Rect rect;
 	rect.x = x;
@@ -315,10 +330,11 @@ void DrawViewPort(SDL_Renderer* render,int x,int y ,int w,int h)
 	rect.h = h;
 	SDL_RenderSetViewport(render, &rect);
 }
+
 void DrawLession9()
 {
 	//Top left corner viewport
-	DrawViewPort(gRenderer,0,0, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+	DrawViewPort(gRenderer, 0, 0, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
 
 	//Render texture to screen
 	SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
@@ -335,7 +351,7 @@ void DrawLession9()
 	bottomViewport.y = SCREEN_HEIGHT / 2;
 	bottomViewport.w = SCREEN_WIDTH;
 	bottomViewport.h = SCREEN_HEIGHT / 2;
-	DrawViewPort(gRenderer,  0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
+	DrawViewPort(gRenderer, 0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
 
 	//Render texture to screen
 	SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
@@ -345,13 +361,27 @@ void DrawLession9()
 	SDL_RenderPresent(gRenderer);
 }
 
+void DrawLession10() {
+	//Clear screen
+	SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+	SDL_RenderClear(gRenderer);
+
+	//Render background texture to screen
+	gBackgroundTexture.render(gRenderer,0, 0);
+
+	//Render Foo' to the screen
+	gFooTexture.render(gRenderer,240, 190);
+
+	//Update screen
+	SDL_RenderPresent(gRenderer);
+}
 int main(int argc, char* argv[]) {
 
 	bool quit = false;
 
 	quit = !init();
 	quit = !loadMedia();
-	
+
 	SDL_Event e;
 	while (!quit) {
 		while (SDL_PollEvent(&e))
@@ -379,7 +409,8 @@ int main(int argc, char* argv[]) {
 			}
 		}
 		//DrawLession8();
-		DrawLession9();
+		//DrawLession9();
+		DrawLession10();
 
 	}
 	close();
@@ -388,7 +419,11 @@ int main(int argc, char* argv[]) {
 
 void close()
 {
-	cleanup(gTexture,gWindow,gRenderer);
+	//Free loaded images
+	gFooTexture.free();
+	gBackgroundTexture.free();
+
+	cleanup(gTexture, gWindow, gRenderer);
 	gTexture = NULL;
 	gWindow = NULL;
 	gRenderer = NULL;
