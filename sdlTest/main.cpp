@@ -193,6 +193,8 @@ LTexture gBackgroundTexture;
 SDL_Rect gSpriteClips[4];
 LTexture gSpriteSheetTexture;
 
+LTexture gModulatedTexture;
+
 SDL_Surface* loadSurface(std::string path)
 {
 	//The final optimized image
@@ -221,11 +223,11 @@ SDL_Surface* loadSurface(std::string path)
 
 	return optimizedSurface;
 }
-
-bool loadMedia()
-{
+bool loadMedia11() {
 	//Loading success flag
 	bool success = true;
+
+
 
 	if (!gSpriteSheetTexture.loadFromFile(gRenderer, "res/dots.png")) {
 		printf("Failed to load sprite sheet texture!\n");
@@ -257,6 +259,20 @@ bool loadMedia()
 		gSpriteClips[3].h = 100;
 	}
 
+	return success;
+}
+
+bool loadMedia()
+{
+	//Loading success flag
+	bool success = true;
+
+
+	if (!gModulatedTexture.loadFromFile(gRenderer, "res/full.png")) {
+		printf("Failed to load texture!\n");
+		success = false;
+	}
+	
 	return success;
 }
 
@@ -391,10 +407,10 @@ void DrawLession10() {
 	SDL_RenderClear(gRenderer);
 
 	//Render background texture to screen
-	gBackgroundTexture.render(gRenderer,0, 0);
+	gBackgroundTexture.render(gRenderer, 0, 0);
 
 	//Render Foo' to the screen
-	gFooTexture.render(gRenderer,240, 190);
+	gFooTexture.render(gRenderer, 240, 190);
 
 	//Update screen
 	SDL_RenderPresent(gRenderer);
@@ -406,16 +422,29 @@ void DrawLession11() {
 	SDL_RenderClear(gRenderer);
 
 	//Render top left sprite
-	gSpriteSheetTexture.render(gRenderer,0, 0, &gSpriteClips[0]);
+	gSpriteSheetTexture.render(gRenderer, 0, 0, &gSpriteClips[0]);
 
 	//Render top right sprite
-	gSpriteSheetTexture.render(gRenderer,SCREEN_WIDTH - gSpriteClips[1].w, 0, &gSpriteClips[1]);
+	gSpriteSheetTexture.render(gRenderer, SCREEN_WIDTH - gSpriteClips[1].w, 0, &gSpriteClips[1]);
 
 	//Render bottom left sprite
-	gSpriteSheetTexture.render(gRenderer,0, SCREEN_HEIGHT - gSpriteClips[2].h, &gSpriteClips[2]);
+	gSpriteSheetTexture.render(gRenderer, 0, SCREEN_HEIGHT - gSpriteClips[2].h, &gSpriteClips[2]);
 
 	//Render bottom right sprite
-	gSpriteSheetTexture.render(gRenderer,SCREEN_WIDTH - gSpriteClips[3].w, SCREEN_HEIGHT - gSpriteClips[3].h, &gSpriteClips[3]);
+	gSpriteSheetTexture.render(gRenderer, SCREEN_WIDTH - gSpriteClips[3].w, SCREEN_HEIGHT - gSpriteClips[3].h, &gSpriteClips[3]);
+
+	//Update screen
+	SDL_RenderPresent(gRenderer);
+}
+
+void DrawLession12(SDL_Renderer* render, Uint8 r , Uint8 g, Uint8 b) {
+	//Clear screen
+	SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+	SDL_RenderClear(gRenderer);
+
+	//Modulate and render texture
+	gModulatedTexture.setColor(r, g, b);
+	gModulatedTexture.render(render,0, 0);
 
 	//Update screen
 	SDL_RenderPresent(gRenderer);
@@ -429,6 +458,13 @@ int main(int argc, char* argv[]) {
 
 	SDL_Event e;
 	int clickNum = 0;
+	
+
+	//Modulation components
+	Uint8 r = 255;
+	Uint8 g = 255;
+	Uint8 b = 255;
+
 	while (!quit) {
 
 		while (SDL_PollEvent(&e))
@@ -441,11 +477,41 @@ int main(int argc, char* argv[]) {
 			{
 				switch (e.key.keysym.sym)
 				{
+					//Increase red
+				case SDLK_q:
+					r += 32;
+					break;
+
+					//Increase green
+				case SDLK_w:
+					g += 32;
+					break;
+
+					//Increase blue
+				case SDLK_e:
+					b += 32;
+					break;
+
+					//Decrease red
+				case SDLK_a:
+					r -= 32;
+					break;
+
+					//Decrease green
+				case SDLK_s:
+					g -= 32;
+					break;
+
+					//Decrease blue
+				case SDLK_d:
+					b -= 32;
+					break;
+
 				case SDLK_1:
-					DrawLession11();
-					gSpriteSheetTexture.render(gRenderer, SCREEN_WIDTH/2- gSpriteClips[1].w/2, SCREEN_HEIGHT / 2 - gSpriteClips[1].h / 2, &gSpriteClips[clickNum %4]);
+					/*DrawLession11();
+					gSpriteSheetTexture.render(gRenderer, SCREEN_WIDTH / 2 - gSpriteClips[1].w / 2, SCREEN_HEIGHT / 2 - gSpriteClips[1].h / 2, &gSpriteClips[clickNum % 4]);
 					SDL_RenderPresent(gRenderer);
-					clickNum++;
+					clickNum++;*/
 					break;
 				case SDLK_ESCAPE:
 					quit = true;
@@ -460,10 +526,9 @@ int main(int argc, char* argv[]) {
 			}
 
 		}
-		if (clickNum==0)
-		{
-			DrawLession11();
-		}
+
+		DrawLession12(gRenderer,r,g,b);
+		
 		//DrawLession8();
 		//DrawLession9();
 		//DrawLession10();

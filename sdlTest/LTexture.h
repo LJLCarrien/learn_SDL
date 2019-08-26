@@ -21,6 +21,9 @@ public:
 	//Deallocates texture
 	void free();
 
+	//Set color modulation
+	void setColor(Uint8 red, Uint8 green, Uint8 blue);
+
 	//Renders texture at given point
 	void render(SDL_Renderer* ren, int x, int y, SDL_Rect* clip = NULL);
 
